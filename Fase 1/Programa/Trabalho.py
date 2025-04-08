@@ -1,9 +1,18 @@
 import re
 
+def contar_arestas_e_arcos(grafo):
+    arestas_set = set()
+    arcos_count = 0
 
-def get_qtd_nos(grafo):
-    return len(grafo)
+    for u in grafo:
+        for v, custo, demanda, requerido in grafo[u]:
+            # Se a aresta existe nos dois sentidos, considere como aresta (não arco)
+            if (v, u) in grafo and (u, v) not in arestas_set and (v, u) not in arestas_set:
+                arestas_set.add((min(u, v), max(u, v)))  # armazenar só uma vez
+            elif (v, u) not in grafo:
+                arcos_count += 1
 
+    return len(arestas_set), arcos_count
 
 def parse_to_dict(arq):
     # Formato do grafo:
@@ -76,8 +85,10 @@ def parse_to_dict(arq):
 
     return grafo, capacidade, deposito
 
-
-grafo, capacidade, deposito = parse_to_dict("Fase 1\Programa\Testes\BHW3.dat")
+# Ler o arquivo de teste no Windows 
+#grafo, capacidade, deposito = parse_to_dict("Fase 1\Programa\Testes\BHW3.dat")
+# Ler o arquivo de teste no Linux 
+grafo, capacidade, deposito = parse_to_dict("Fase 1/Programa/Testes/BHW1.dat")
 
 # Exibe o grafo
 for u in grafo:
@@ -85,5 +96,7 @@ for u in grafo:
         tipo = "R" if required else "NR"
         print(f"{u} -> {v} | custo={cost}, demanda={demand}, {tipo}")
 
-# Obtém o número de vértices do grafo
-qtd_nos = get_qtd_nos(grafo)
+arestas, arcos = contar_arestas_e_arcos(grafo)
+
+print(f"Arestas: {arestas} Arcos: {arcos}")
+

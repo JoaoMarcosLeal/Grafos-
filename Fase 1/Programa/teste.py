@@ -1,8 +1,9 @@
 import re
 
-grafo = {1: [(2, 13, 1, True), (4, 17, 1, True)]}
+grafo = {1: [(2, 13, 1, True), (4, 17, 1, True)], 2 :[(1, 13, 1, True)]}
 
-print(grafo[1][0])
-print(grafo[])
+print(grafo[1][0][0])
 
-# 1: [(arestas)] 2: [(aresta1), (aresta2), (aresta3)]
+for n in grafo: 
+    for a in grafo[n]: 
+        if (a[0], )
