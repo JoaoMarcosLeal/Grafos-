@@ -1,5 +1,6 @@
 import re
 from collections import deque
+import math
 
 
 class Grafo:
@@ -7,7 +8,7 @@ class Grafo:
         self.num_vertices = num_vertices
         # Lista de adjacência: para cada vértice, guarda uma lista de dicionários
         # representando as arestas/arcos que saem do vértice.
-        self.lista_adj = [[] for _ in range(num_vertices)]
+        self.lista_adj = [[] for _ in range(num_vertices + 1)]
         # Vértices requeridos
         self.vr = set()
         # Arestas (edges) requeridos (não direcionadas)
@@ -52,7 +53,7 @@ class Grafo:
     # Método usado na depuração do código
     def imprimir_lista_adj(self):
         print("Lista de Adjacência:")
-        for u in range(self.num_vertices):
+        for u in range(1, self.num_vertices):
             print(f"Vértice {u}:")
             for aresta in self.lista_adj[u]:
                 print(
@@ -147,12 +148,135 @@ class Grafo:
 
     # 9. Grau mínimo dos vértices
     def grau_minimo(self):
-        min_grau = len(self.lista_adj[0])
-        for i in range(self.num_vertices):
+        min_grau = len(self.lista_adj[1])
+        for i in range(1, self.num_vertices):
             graus = len(self.lista_adj[i])
             if min_grau > graus:
                 min_grau = graus
         return min_grau
+
+    # 10. Grau maxímo
+    def grau_maximo(self):
+        max_grau = len(self.lista_adj[1])
+        for i in range(1, self.num_vertices):
+            graus = len(self.lista_adj[i])
+            if max_grau < graus:
+                max_grau = graus
+        return max_grau
+
+    def calcular_matriz_caminhos_minimos(self):
+        """
+        Calcula a matriz de distâncias e a matriz de predecessores usando o algoritmo de Floyd Warshall.
+        Para cada par (i, j), usamos o custo mínimo dentre todas as arestas que saem de i para j,
+        se houver múltiplas.
+        """
+        n = self.num_vertices
+
+        # Inicializa a matriz de distâncias e predecessores
+        # dist[i][j] = custo mínimo conhecido de i para j.
+        # pred[i][j] = predecessor de j no caminho mais curto partindo de i.
+        dist = [[math.inf] * n for _ in range(n)]
+        pred = [[None] * n for _ in range(n)]
+
+        # Inicializa: custo zero para i==j
+        for i in range(n):
+            dist[i][i] = 0
+            pred[i][i] = i
+
+        # Para cada aresta (ou arco) em cada lista de adjacência,
+        # seleciona o menor custo (se houver mais de uma conexão).
+        for u in range(n):
+            for aresta in self.lista_adj[u]:
+                v = aresta["dest"]
+                custo = aresta["custo"]
+                # Se já houver outra aresta entre u e v, usa o menor custo
+                if custo < dist[u][v]:
+                    dist[u][v] = custo
+                    pred[u][v] = u
+
+        # Aplica o algoritmo de Floyd-Warshall
+        for k in range(n):
+            for i in range(n):
+                for j in range(n):
+                    if dist[i][k] + dist[k][j] < dist[i][j]:
+                        dist[i][j] = dist[i][k] + dist[k][j]
+                        pred[i][j] = pred[k][j]
+
+        return dist, pred
+
+    def reconstruir_caminho(self, s, t, pred):
+        """
+        Reconstrói o caminho de s até t utilizando a matriz de predecessores.
+        Retorna uma lista de vértices representando o caminho.
+        Se não houver caminho, retorna lista vazia.
+        """
+        if pred[s][t] is None:
+            return []
+        caminho = [t]
+        while t != s:
+            t = pred[s][t]
+            caminho.append(t)
+        caminho.reverse()
+        return caminho
+
+    # 11 Intermediação
+    def calcular_intermediacao(self):
+        """
+        Calcula a intermediação (betweenness) de cada vértice.
+        Para cada par de vértices (s, t), conta quantas vezes um vértice aparece
+        como intermediário no caminho mais curto entre s e t.
+        """
+        dist, pred = self.calcular_matriz_caminhos_minimos()
+        intermed = [0] * self.num_vertices
+
+        # Para cada par (s, t) s ≠ t
+        for s in range(self.num_vertices):
+            for t in range(self.num_vertices):
+                if s != t and dist[s][t] < math.inf:
+                    caminho = self.reconstruir_caminho(s, t, pred)
+                    # Se existir caminho, incrementa para os vértices intermediários (excluindo s e t)
+                    if len(caminho) > 2:
+                        for v in caminho[1:-1]:
+                            intermed[v] += 1
+        return intermed
+
+    # 12 Caminho médio
+    def calcular_caminho_medio(self):
+        """
+        Calcula o caminho médio (average shortest path length) considerando
+        somente os pares (i, j) conectados (ou seja, com distância < inf).
+        """
+
+        dist, _ = self.calcular_matriz_caminhos_minimos()
+        soma = 0.0
+        contador = 0
+        n = self.num_vertices
+        for i in range(n):
+            for j in range(n):
+                # Considera apenas caminhos entre vértices diferentes que sejam alcançáveis
+                if i != j and dist[i][j] < math.inf:
+                    soma += dist[i][j]
+                    contador += 1
+
+        return round(soma / contador, 2)
+
+    # 13 Diâmetro
+    def calcular_diametro(self):
+        """
+        Calcula o diâmetro do grafo, isto é, o maior custo entre os menores caminhos
+        de todos os pares de vértices conectados.
+        """
+
+        # Obtém a matriz de distâncias, ignorando a matriz de predecessores aqui.
+        dist, _ = self.calcular_matriz_caminhos_minimos()
+        diametro = 0
+        n = self.num_vertices
+        for i in range(n):
+            for j in range(n):
+                # Considera apenas pares diferentes e conexos
+                if i != j and dist[i][j] < math.inf:
+                    diametro = max(diametro, dist[i][j])
+        return diametro
 
 
 def ler_arq(arq):
@@ -273,3 +397,22 @@ print(f"7. Densidade do grafo: {grafo.calc_densidade()}")
 print(f"8. Componentes conectados: {grafo.contar_componentes_conectados()}")
 
 print(f"9. Grau mínimo: {grafo.grau_minimo()}")
+
+print(f"10. Grau maxímo: {grafo.grau_maximo()}")
+
+print()
+
+intermediacao = grafo.calcular_intermediacao()
+
+print("11. Intermediação: ")
+
+for v in range(grafo.num_vertices):
+    print(
+        f"  Vértice {v} aparece {intermediacao[v]} vezes como intermediário nos caminhos mais curtos."
+    )
+
+print()
+
+print(f"12. Caminho médio: {grafo.calcular_caminho_medio()}")
+
+print(f"13. Diâmetro: {grafo.calcular_diametro()}")
