@@ -1,4 +1,5 @@
 import re
+from collections import deque
 
 
 class Grafo:
@@ -56,9 +57,11 @@ class Grafo:
                             f"    custo={aresta['custo']}, demanda={aresta['demanda']}, requerida={aresta['requerida']}"
                         )
 
+    # 1 Quantidade de vértices
     def contar_vertices(self):
         return len(self.matriz)
 
+    # 2 Quantidade de arestas
     def contar_edges(self):
         num_edges = 0
         percorrido = set()
@@ -72,7 +75,7 @@ class Grafo:
                             percorrido.add(chave)
         return num_edges
 
-    #
+    # 3 Quantidade de arcos
     def contar_arcos(self):
         num_arcos = 0
         for i in range(self.num_vertices):
@@ -82,8 +85,59 @@ class Grafo:
                         num_arcos += 1
         return num_arcos
 
+    # 4 Quantidade de vértices requeridos
+    def qtd_vertices_req(self):
+        return len(self.vr)
 
-def ler_bhw1_formato(arq):
+    # 5 Quantidade de arestas requeridas
+    def qtd_edges_req(self):
+        return len(self.er)
+
+    # 6 Quantidade de arcos requeridos
+    def qtd_arcos_req(self):
+        return len(self.ar)
+
+    # 7 Densidade do grafo (order strength)
+    def calc_densidade(self):
+        # Obtém o número de arcos
+        nmr_arcos = self.contar_arcos()
+        # Obtém o número de arestas
+        nmr_ed = self.contar_edges()
+        # Determina o númeor maxímo de arcos
+        max_arc = nmr_arcos * (nmr_arcos - 1)
+        # Determina o número maxímo de arestas
+        max_ed = (nmr_ed * (nmr_ed - 1)) / 2
+        # Razão entre o número atual de arestas/arcos e o número maxímo de arestas/arcos
+        return round(float((nmr_arcos + nmr_ed) / (max_ed + max_arc)), 2)
+
+    # 8 Componentes conectados
+    def contar_componentes_conectados(self):
+        visitado = [False] * self.num_vertices
+        # Vértice de origem
+        s = 0
+        # Mantém o tracking do número de componentes conectados entre si
+        componentes = 0
+        fila = deque(self.matriz[s][s])
+        for v in range(self.num_vertices):
+            if not visitado[v]:
+                componentes += 1
+                fila = deque([v])
+                visitado[v] = True
+
+                while fila:
+                    u = fila.popleft()
+                    for w in range(self.num_vertices):
+                        if u == w:
+                            continue
+                        # Ignora a direção: considera conexão em qualquer sentido
+                        if (self.matriz[u][w] or self.matriz[w][u]) and not visitado[w]:
+                            visitado[w] = True
+                            fila.append(w)
+
+        return componentes
+
+
+def ler_arq(arq):
     with open(arq, "r") as f:
         linhas = f.readlines()
 
@@ -178,10 +232,21 @@ def ler_bhw1_formato(arq):
     return grafo
 
 
-grafo = ler_bhw1_formato("Fase 1/Programa/Testes/BHW1.dat")
+grafo = ler_arq("Fase 1/Programa/Testes/BHW1.dat")
 
-print(f"Número de vértices: {grafo.contar_vertices()}")
+##### Estatísticas do grafo #####
+print(f"1. Número de vértices: {grafo.contar_vertices()}")
 
-print(f"Número de arestas: {grafo.contar_edges()}")
+print(f"2. Número de arestas: {grafo.contar_edges()}")
 
-print(f"Númeor de arcos: {grafo.contar_arcos()}")
+print(f"3. Númeor de arcos: {grafo.contar_arcos()}")
+
+print(f"4. Número de vértices requeridos: {grafo.qtd_vertices_req()}")
+
+print(f"5. Número de arestas requeridas: {grafo.qtd_edges_req()}")
+
+print(f"6. Número de arcos requeridos: {grafo.qtd_arcos_req()}")
+
+print(f"7. Densidade do grafo: {grafo.calc_densidade()}")
+
+print(f"8. Componentes conectados: {grafo.contar_componentes_conectados()}")
