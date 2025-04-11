@@ -96,6 +96,19 @@ class Grafo:
     def qtd_arcos_req(self):
         return len(self.ar)
 
+    def densidade(self):
+        # Obtém o número de arcos
+        nmr_arcos = self.contar_arcos()
+        # Obtém o número de arestas
+        nmr_ed = self.contar_edges()
+        # Determina o númeor maxímo de arcos
+        max_arc = nmr_arcos * (nmr_arcos - 1)
+        # Determina o número maxímo de arestas
+        max_ed = (nmr_ed * (nmr_ed - 1)) / 2
+
+        # Razão entre o número maxímo de arestas/arcos e o número atual de arestas/arcos
+        return (nmr_arcos + nmr_ed) / (max_ed + max_arc)
+
 
 def ler_bhw1_formato(arq):
     with open(arq, "r") as f:
