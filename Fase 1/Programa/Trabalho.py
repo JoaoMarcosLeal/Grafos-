@@ -1,102 +1,208 @@
 import re
 
-def contar_arestas_e_arcos(grafo):
-    arestas_set = set()
-    arcos_count = 0
 
-    for u in grafo:
-        for v, custo, demanda, requerido in grafo[u]:
-            # Se a aresta existe nos dois sentidos, considere como aresta (não arco)
-            if (v, u) in grafo and (u, v) not in arestas_set and (v, u) not in arestas_set:
-                arestas_set.add((min(u, v), max(u, v)))  # armazenar só uma vez
-            elif (v, u) not in grafo:
-                arcos_count += 1
+class Grafo:
+    def __init__(self, num_vertices):
+        # Quantidade de vértices para montar a matriz de adjacência
+        self.num_vertices = num_vertices
+        # Matriz de adjacência usada para representar o Grafo
+        self.matriz = [[[] for _ in range(num_vertices)] for _ in range(num_vertices)]
+        # Vertices requeridas
+        self.vr = set()
+        # Edges requeridos
+        self.er = set()
+        # Arcos requeridos
+        self.ar = set()
 
-    return len(arestas_set), arcos_count
+    def adicionar_aresta(
+        self, u, v, custo=1, demanda=0, requerida=False, dirigido=False
+    ):
+        self.matriz[u][v].append(
+            {
+                "custo": custo,
+                "demanda": demanda,
+                "requerida": requerida,
+                "dirigido": dirigido,
+            }
+        )
+        if not dirigido:
+            self.matriz[v][u].append(
+                {
+                    "custo": custo,
+                    "demanda": demanda,
+                    "requerida": requerida,
+                    "dirigido": dirigido,
+                }
+            )
+            if requerida:
+                self.er.add(tuple(sorted((u, v))))
+        else:
+            if requerida:
+                self.ar.add((u, v))
 
-def parse_to_dict(arq):
-    # Formato do grafo:
-    # Grafo = { 1: [(2, 13, 1, True), (4, 17, 1, True)]}
-    grafo = {}
-    capacidade = None
-    deposito = None
+    # Adciona vértices requeridos
+    def adicionar_vertice_requerido(self, v):
+        self.vr.add(v)
+
+    # Método para ajudar na depuração do código
+    def imprimir_matriz(self):
+        print("Matriz de Adjacência:")
+        for i in range(self.num_vertices):
+            for j in range(self.num_vertices):
+                if self.matriz[i][j]:  # só imprime se houver pelo menos uma aresta/arco
+                    print(f"{i} -> {j} :")
+                    for aresta in self.matriz[i][j]:
+                        print(
+                            f"    custo={aresta['custo']}, demanda={aresta['demanda']}, requerida={aresta['requerida']}"
+                        )
+
+    # 1 Quantidade de vértices
+    def contar_vertices(self):
+        return len(self.matriz)
+
+    # 2 Quantidade de arestas
+    def contar_edges(self):
+        num_edges = 0
+        percorrido = set()
+        for i in range(self.num_vertices):
+            for j in range(self.num_vertices):
+                for aresta in self.matriz[i][j]:
+                    if not aresta["dirigido"]:
+                        chave = tuple(sorted((i, j)))
+                        if chave not in percorrido:
+                            num_edges += 1
+                            percorrido.add(chave)
+        return num_edges
+
+    # 3 Quantidade de arcos
+    def contar_arcos(self):
+        num_arcos = 0
+        for i in range(self.num_vertices):
+            for j in range(self.num_vertices):
+                for aresta in self.matriz[i][j]:
+                    if aresta["dirigido"]:
+                        num_arcos += 1
+        return num_arcos
+
+    # 4 Quantidade de vértices requeridos
+    def qtd_vertices_req(self):
+        return len(self.vr)
+
+    # 5 Quantidade de arestas requeridas
+    def qtd_edges_req(self):
+        return len(self.er)
+
+    # 6 Quantidade de arcos requeridos
+    def qtd_arcos_req(self):
+        return len(self.ar)
+
+
+def ler_bhw1_formato(arq):
+    with open(arq, "r") as f:
+        linhas = f.readlines()
+
+    num_vertices = None
+    grafo = None
     secao = None
 
-    # A abre e fecha o arquivo assim que as operações estiverem finazilzadas
-    with open(arq) as f:
-        # For para percorrer o arquivo linha por linha
-        for linha in f:
-            # Remove os espaços no início e no final do arquivo
-            linha = linha.strip()
-            if not linha or linha.startswith("#"):
-                continue
+    for linha in linhas:
+        linha = linha.strip()
+        if not linha:
+            continue
 
-            # Retira as informações relevantes do cabeçalho
-            if "Capacity" in linha:
-                # Usa de expressões regulares para retirar o valor da capacidade
-                # (\d+) pega todos os dígitos inteiros
-                capacidade = int(re.search(r"\d+", linha).group())
-            elif "Depot Node" in linha:
-                # Faz o mesmo descrito acima
-                deposito = int(re.search(r"\d+", linha).group())
+        # Cabeçalho
+        if linha.startswith("#Nodes:"):
+            num_vertices = int(linha.split(":")[1])
+            grafo = Grafo(num_vertices)
+            continue
 
-            # Seções
-            elif linha.startswith("ReE."):
-                secao = "required_edges"
-                continue
-            elif linha.startswith("EDGE"):
-                secao = "edges"
-                continue
-            elif linha.startswith("ReA."):
-                secao = "required_arcs"
-                continue
-            elif linha.startswith("ARC"):
-                secao = "arcs"
-                continue
+        if re.match(r"ReN\.", linha):
+            secao = "ReN"
+            continue
+        if re.match(r"ReE\.", linha):
+            secao = "ReE"
+            continue
+        if re.match(r"EDGE", linha):
+            secao = "EDGE"
+            continue
+        if re.match(r"ReA\.", linha):
+            secao = "ReA"
+            continue
+        if re.match(r"ARC", linha):
+            secao = "ARC"
+            continue
 
-            # Parse conforme seção
-            if secao == "required_edges":
-                # R
-                match = re.match(r"E\d+\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+\d+", linha)
-                if match:
-                    # Converte para inteiros cada string capturada na expressão regular
-                    u, v, cost, demand = map(int, match.groups())
-                    grafo.setdefault(u, []).append((v, cost, demand, True))
-                    grafo.setdefault(v, []).append((u, cost, demand, True))
+        if secao == "ReN":
+            if m := re.match(r"N(\d+)", linha):
+                v = int(m.group(1)) - 1
+                grafo.adicionar_vertice_requerido(v)
 
-            elif secao == "edges":
-                match = re.match(r"\w+\s+(\d+)\s+(\d+)\s+(\d+)", linha)
-                if match:
-                    u, v, cost = map(int, match.groups())
-                    grafo.setdefault(u, []).append((v, cost, 0, False))
-                    grafo.setdefault(v, []).append((u, cost, 0, False))
+        elif secao == "ReE":
+            partes = linha.split()
+            if len(partes) >= 6:
+                _, u, v, custo, demanda, _ = partes
+                grafo.adicionar_aresta(
+                    int(u) - 1,
+                    int(v) - 1,
+                    int(custo),
+                    int(demanda),
+                    requerida=True,
+                    dirigido=False,
+                )
 
-            elif secao == "required_arcs":
-                match = re.match(r"A\d+\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d)+\s+\d+", linha)
-                if match:
-                    u, v, cost, demand = map(int, match.groups())
-                    grafo.setdefault(u, []).append((v, cost, demand, True))
+        elif secao == "EDGE":
+            partes = linha.split()
+            if (
+                len(partes) >= 4
+                and partes[-3].isdigit()
+                and partes[-2].isdigit()
+                and partes[-1].isdigit()
+            ):
+                u = int(partes[-3]) - 1
+                v = int(partes[-2]) - 1
+                custo = int(partes[-1])
+                grafo.adicionar_aresta(u, v, custo, 0, requerida=False, dirigido=False)
 
-            elif secao == "arcs":
-                match = re.match(r"Nr A\d+\s+(\d+)\s+(\d+)\s+(\d+)", linha)
-                if match:
-                    u, v, cost = map(int, match.groups())
-                    grafo.setdefault(u, []).append((v, cost, 0, False))
+        elif secao == "ReA":
+            partes = linha.split()
+            if len(partes) >= 6:
+                _, u, v, custo, demanda, _ = partes
+                grafo.adicionar_aresta(
+                    int(u) - 1,
+                    int(v) - 1,
+                    int(custo),
+                    int(demanda),
+                    requerida=True,
+                    dirigido=True,
+                )
 
-    return grafo, capacidade, deposito
+        elif secao == "ARC":
+            partes = linha.split()
+            if (
+                len(partes) >= 4
+                and partes[-3].isdigit()
+                and partes[-2].isdigit()
+                and partes[-1].isdigit()
+            ):
+                u = int(partes[-3]) - 1
+                v = int(partes[-2]) - 1
+                custo = int(partes[-1])
+                grafo.adicionar_aresta(u, v, custo, 0, requerida=False, dirigido=True)
 
-# Ler o arquivo de teste no Windows 
-#grafo, capacidade, deposito = parse_to_dict("Fase 1\Programa\Testes\BHW3.dat")
-# Ler o arquivo de teste no Linux 
-grafo, capacidade, deposito = parse_to_dict("Fase 1/Programa/Testes/BHW1.dat")
+    return grafo
 
-# Exibe o grafo
-for u in grafo:
-    for v, cost, demand, required in grafo[u]:
-        tipo = "R" if required else "NR"
-        print(f"{u} -> {v} | custo={cost}, demanda={demand}, {tipo}")
 
-arestas, arcos = contar_arestas_e_arcos(grafo)
+grafo = ler_bhw1_formato("Fase 1/Programa/Testes/BHW1.dat")
 
-print(f"Arestas: {arestas} Arcos: {arcos}")
+##### Estatísticas do grafo #####
+print(f"1. Número de vértices: {grafo.contar_vertices()}")
 
+print(f"2. Número de arestas: {grafo.contar_edges()}")
+
+print(f"3. Númeor de arcos: {grafo.contar_arcos()}")
+
+print(f"4. Número de vértices requeridos: {grafo.qtd_vertices_req()}")
+
+print(f"5. Número de arestas requeridas: {grafo.qtd_edges_req()}")
+
+print(f"6. Número de arcos requeridos: {grafo.qtd_arcos_req()}")
