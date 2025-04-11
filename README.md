@@ -41,3 +41,20 @@ Serviços são requeridos em:
 
 De modo que o número total de serviços seja:  
 > **n = |VR| + |ER| + |AR|**
+
+Solução para a etapa 1
+
+## 🧱 Estrutura de Dados e Leitura de Arquivo
+
+### 📂 Estrutura de Dados Escolhida
+
+A estrutura de dados utilizada para representar o grafo foi a **lista de adjacência**, por oferecer:
+
+- Eficiência para a maioria das operações realizadas no cálculo das estatísticas solicitadas na Etapa 1.
+
+### 🧾 Leitura do Arquivo
+
+A leitura da instância do problema foi realizada a partir de um arquivo `.dat`, seguindo o formato fornecido no enunciado.
+
+Para interpretar os diferentes tipos de elementos (arestas, arcos, vértices requeridos, etc), foram utilizadas **expressões regulares** 
+
