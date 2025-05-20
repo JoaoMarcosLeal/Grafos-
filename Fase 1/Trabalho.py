@@ -374,7 +374,7 @@ def ler_arq(arq):
     return grafo
 
 
-grafo = ler_arq("Fase 1/Programa/Testes/BHW1.dat")
+grafo = ler_arq("Testes\BHW1.dat")
 
 
 grafo.imprimir_lista_adj()
