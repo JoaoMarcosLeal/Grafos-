@@ -1,4 +1,6 @@
 import re
+import networkx as nx
+import matplotlib.pyplot as plt
 
 class Grafo:
     def __init__(self, numero_de_nos, capacidade, deposito):
@@ -79,6 +81,23 @@ class Grafo:
             for j in self.lista_adj[i]:
                 print(f"-> {j["destino"]}")
 
+    def visualizarGrafo(self):
+        G = nx.MultiDiGraph()
+
+        for i in range(1, self.numero_de_nos):
+            for j in self.lista_adj[i]:
+                G.add_edge(j["saida"], j["destino"])
+
+        nx.draw(
+            G,
+            with_labels=True,
+            node_color="lightblue",
+            node_size=700,
+            font_size=12,
+        )
+
+        plt.show()        
+        
 
 def ler_arquivo(arq: str):
     """
@@ -234,5 +253,6 @@ def ler_arcos(arquivo, grafo: Grafo, requerido: bool = False):
         linha = arquivo.readline()
 
 
-grafo = ler_arquivo(r"Testes\BHW1.dat")
+grafo = ler_arquivo(r"Trabalho\Grafos-\Testes\BHW1.dat")
 grafo.imprimirGrafo()
+
